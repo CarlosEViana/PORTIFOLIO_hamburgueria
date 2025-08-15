@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cardápio • Hamburgueria</title>
+<style>
+  :root{
+    --bg:#000;
+    --panel:#111;
+    --panel-2: rgba(255,255,255,.06);
+    --text:#fff;
+    --gold:#ffd700;
+    --muted:#cfcfcf;
+    --accent:#22c55e;      /* WhatsApp verde */
+    --accent-2:#ef4444;    /* remover / ação */
+    --brand:#f59e0b;       /* destaque no banner */
+    --shadow:0 8px 20px rgba(255,255,255,.15);
+    --radius:16px;
+    --max:1000px;
+  }
+
+  /* Base */
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+  a{color:inherit;text-decoration:none}
+
+  /* Topbar flutuante */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    backdrop-filter: saturate(120%) blur(6px);
+    background: rgba(17,17,17,.9);
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .topbar-inner{
+    max-width: var(--max); margin:0 auto; padding:10px 16px;
+    display:flex; align-items:center; gap:12px; justify-content:space-between;
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px;
+    font-weight:700;
+  }
+  .brand-badge{
+    width:44px;height:44px;border-radius:12px;background:#b98f5b;
+    display:grid;place-items:center;font-weight:900;color:#2b1b0a;
+  }
+  .top-actions{display:flex; gap:10px}
+  .btn{
+    border:0;padding:10px 14px;border-radius:999px;cursor:pointer;font-weight:700;
+    display:inline-flex;align-items:center;gap:8px;background:#222;color:#fff;
+  }
+  .btn.whats{background:var(--accent)}
+  .btn.cart{background:#2563eb}
+  .btn svg{width:18px;height:18px}
+
+  /* Banner de destaque (sem imagem) */
+  .promo{
+    background:
+      radial-gradient(1200px 200px at 50% -50px, rgba(255,255,255,.08), transparent 60%),
+      linear-gradient(180deg, #1a120c 0%, #0d0a08 100%);
+    padding:28px 16px 40px;
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .promo-inner{
+    max-width: var(--max); margin:0 auto;
+    background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.06));
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:20px; padding:24px;
+    box-shadow: var(--shadow);
+    display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
+  }
+  .promo h2{margin:0 0 6px; font-size:28px}
+  .promo p{margin:0; color:var(--muted)}
+  .promo .pill{
+    background:#1f160f; border:1px solid rgba(255,255,255,.08);
+    padding:10px 14px;border-radius:999px; font-weight:700; color:var(--brand)
+  }
+
+  /* Títulos de seção */
+  .section-title{
+    max-width: var(--max); margin:30px auto 10px; padding:0 16px;
+    font-size:20px; color:#fff; opacity:.9;
+  }
+
+  /* Grid de cards */
+  .cardapio{
+    display:grid; grid-template-columns: repeat(3, 1fr);
+    gap:20px; padding: 10px 16px 30px; max-width: var(--max); margin: 0 auto;
+    background: transparent;
+  }
+  .card{
+    border-radius: var(--radius);
+    overflow:hidden;
+    background: transparent;
+    transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .card:hover{ transform: translateY(-2px) scale(1.02); box-shadow: var(--shadow) }
+  .card img{
+    width:100%; height:210px; object-fit:cover; display:block;
+    border-bottom:1px solid rgba(255,255,255,.06);
+  }
+  .card-content{
+    background: var(--panel-2);
+    padding:16px;
+  }
+  .card-content h3{ margin:0 0 6px; font-size:1.1rem }
+  .card-content p{ margin:0 0 10px; color:var(--muted) }
+  .price{ font-weight:700; color: var(--gold) }
+  .actions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap }
+  .btn-sm{
+    padding:8px 10px; border-radius:10px; border:0; cursor:pointer; font-weight:700;
+    background:#333; color:#fff;
+  }
+  .btn-primary{ background:#10b981 } /* verde */
+  .opt-inline{ display:flex; align-items:center; gap:8px; margin-top:8px }
+  .opt-inline select{
+    background:#1a1a1a; color:#fff; border:1px solid rgba(255,255,255,.12);
+    border-radius:10px; padding:8px 10px;
+  }
+
+  /* Carrinho (drawer) */
+  .drawer{
+    position: fixed; right:0; top:0; bottom:0; width: 380px; max-width: 100%;
+    background: #0e0e0e; border-left:1px solid rgba(255,255,255,.08);
+    transform: translateX(110%); transition: transform .3s ease; z-index:60;
+    display:flex; flex-direction:column;
+  }
+  .drawer.open{ transform: translateX(0) }
+  .drawer-header{
+    padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
+  .drawer-body{ padding:12px 12px 120px; overflow:auto; flex:1 }
+  .cart-item{
+    border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:12px; margin-bottom:10px;
+    background:#121212;
+  }
+  .cart-top{ display:flex; justify-content:space-between; align-items:center; gap:8px }
+  .qty{ display:flex; align-items:center; gap:8px }
+  .qty button{ width:28px; height:28px; border-radius:8px; border:0; cursor:pointer; background:#222; color:#fff }
+  .opt, .note{ font-size:.9rem; color:var(--muted); margin-top:6px }
+  .note textarea{
+    width:100%; min-height:48px; resize:vertical; background:#0b0b0b; color:#fff;
+    border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:8px; margin-top:6px;
+  }
+  .drawer-footer{
+    position: absolute; left:0; right:0; bottom:0;
+    border-top:1px solid rgba(255,255,255,.08); background:#0b0b0b;
+    padding:12px;
+  }
+  .total-line{ display:flex; justify-content:space-between; font-weight:700; margin-bottom:8px }
+  .payments{ display:grid; grid-template-columns: repeat(2,1fr); gap:8px; margin:8px 0 10px }
+  .payments label{
+    display:flex; align-items:center; gap:8px; background:#141414; padding:10px; border-radius:10px; cursor:pointer;
+    border:1px solid transparent;
+  }
+  .payments input{ accent-color:#10b981 }
+  .send{ width:100%; padding:12px; border:0; border-radius:12px; font-weight:900; cursor:pointer; background:#22c55e; color:#fff }
+  .empty{ color:var(--muted); text-align:center; padding:20px 0 }
+
+  /* Responsivo */
+  @media (max-width: 900px){
+    .cardapio{ grid-template-columns: repeat(2,1fr) }
+  }
+  @media (max-width: 600px){
+    .cardapio{ grid-template-columns: 1fr }
+    .promo h2{ font-size:22px }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Topbar flutuante -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-badge">LG</div>
+        <div>LANCHES & CIA</div>
+      </div>
+      <div class="top-actions">
+        <button class="btn whats" id="whatsTop">
+          <!-- ícone -->
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 3H4a1 1 0 0 0-1 1v16l4-4h13a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1z"/></svg>
+          WhatsApp
+        </button>
+        <button class="btn cart" id="openCart">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4h-2l-1 2h2l3.6 7.59-1.35 2.44A2 2 0 0 0 10 19h9v-2h-8.42a.25.25 0 0 1-.22-.37L11 14h6a2 2 0 0 0 1.8-1.1l3.58-6.49A1 1 0 0 0 21.5 5H7z"/></svg>
+          Carrinho
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Banner Promo -->
+  <section class="promo">
+    <div class="promo-inner">
+      <div>
+        <h2>🔥 Promo de Hoje</h2>
+        <p>Na compra de 2 burgers, <strong>batata P sai por R$ 5,00</strong>.</p>
+      </div>
+      <div class="pill">Válido hoje até 23:59</div>
+    </div>
+  </section>
+
+  <!-- Hamburgers -->
+  <h3 class="section-title">🍔 Hamburgers</h3>
+  <section class="cardapio" id="burgers">
+    <!-- Cards (exemplos) -->
+    <div class="card">
+      <img src="hamburguer1.jpg" alt="Hambúrguer Clássico">
+      <div class="card-content">
+        <h3>Hambúrguer Clássico</h3>
+        <p>Pão, carne, queijo, alface e tomate</p>
+        <span class="price">R$ 25,00</span>
+        <div class="actions">
+          <button class="btn-sm btn-primary add" data-name="Hambúrguer Clássico" data-price="25.00">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="hamburguer1.jpg" alt="X-Salada">
+      <div class="card-content">
+        <h3>X-Salada</h3>
+        <p>Pão, carne, queijo, alface, tomate e maionese</p>
+        <span class="price">R$ 26,50</span>
+        <div class="actions">
+          <button class="btn-sm btn-primary add" data-name="X-Salada" data-price="26.50">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+       <img src="hamburguer1.jpg" alt="X-Frango">
+      <div class="card-content">
+        <h3>X-Frango</h3>
+        <p>Pão, frango grelhado, queijo, alface e maionese temperada</p>
+        <span class="price">R$ 27,00</span>
+        <div class="actions">
+          <button class="btn-sm btn-primary add" data-name="X-Frango" data-price="27.00">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="hamburguer1.jpg" alt="X-Bacon">
+      <div class="card-content">
+        <h3>X-Bacon</h3>
+        <p>Pão, carne, queijo, bacon crocante e molho especial</p>
+        <span class="price">R$ 28,50</span>
+        <div class="actions">
+          <button class="btn-sm btn-primary add" data-name="X-Bacon" data-price="28.50">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="hamburguer1.jpg" alt="X-Egg">
+      <div class="card-content">
+        <h3>X-Egg</h3>
+        <p>Pão, carne, queijo, ovo, alface e tomate</p>
+        <span class="price">R$ 27,50</span>
+        <div class="actions">
+          <button class="btn-sm btn-primary add" data-name="X-Egg" data-price="27.50">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="hamburguer1.jpg" alt="Hambúrguer Duplo">
+      <div class="card-content">
+        <h3>Hambúrguer Duplo</h3>
+        <p>Pão, duas carnes, queijo duplo, alface e tomate</p>
+        <span class="price">R$ 32,00</span>
+        <div class="actions">
+          <button class="btn-sm btn-primary add" data-name="Hambúrguer Duplo" data-price="32.00">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="hamburguer1.jpg" alt="Veggie Burger">
+      <div class="card-content">
+        <h3>Veggie Burger</h3>
+        <p>Pão integral, hambúrguer de grão-de-bico, alface, tomate e molho vegano</p>
+        <span class="price">R$ 26,00</span>
+        <div class="actions">
+          <button class="btn-sm btn-primary add" data-name="Veggie Burger" data-price="26.00">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+       <img src="hamburguer1.jpg" alt="Burger Picante">
+      <div class="card-content">
+        <h3>Burger Picante</h3>
+        <p>Pão, carne, cheddar, jalapeños e molho apimentado</p>
+        <span class="price">R$ 28,00</span>
+        <div class="actions">
+          <button class="btn-sm btn-primary add" data-name="Burger Picante" data-price="28.00">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="hamburguer1.jpg" alt="Burger Gourmet">
+      <div class="card-content">
+        <h3>Burger Gourmet</h3>
+        <p>Pão brioche, carne artesanal, queijo suíço, rúcula e maionese trufada</p>
+        <span class="price">R$ 35,00</span>
+        <div class="actions">
+          <button class="btn-sm btn-primary add" data-name="Burger Gourmet" data-price="35.00">Adicionar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Acompanhamentos (com opção de tamanho) -->
+  <h3 class="section-title">🍟 Acompanhamentos</h3>
+  <section class="cardapio" id="sides">
+
+    <div class="card">
+      <img src="batata.jpg" alt="Batata Frita">
+      <div class="card-content">
+        <h3>Batata Frita</h3>
+        <p>Porção crocante de batatas.</p>
+        <span class="price">A partir de R$ 10,00</span>
+
+        <div class="opt-inline">
+          <label for="tam-batata">Tamanho:</label>
+          <select id="tam-batata">
+            <option value="P" data-price="10.00">P - R$ 10,00</option>
+            <option value="M" data-price="15.00">M - R$ 15,00</option>
+            <option value="G" data-price="20.00">G - R$ 20,00</option>
+          </select>
+        </div>
+
+        <div class="actions">
+          <button class="btn-sm btn-primary add-side" data-name="Batata Frita">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="onion.jpg" alt="Onion Rings">
+      <div class="card-content">
+        <h3>Onion Rings</h3>
+        <p>Anéis de cebola empanados e crocantes.</p>
+        <span class="price">R$ 15,00</span>
+        <div class="actions">
+          <button class="btn-sm btn-primary add" data-name="Onion Rings" data-price="15.00">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="nuggets.jpg" alt="Nuggets de Frango">
+      <div class="card-content">
+        <h3>Nuggets de Frango</h3>
+        <p>Porção com molho de sua escolha.</p>
+        <span class="price">R$ 18,00</span>
+        <div class="actions">
+          <button class="btn-sm btn-primary add" data-name="Nuggets de Frango" data-price="18.00">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Bebidas -->
+  <h3 class="section-title">🥤 Bebidas</h3>
+  <section class="cardapio" id="drinks">
+    <div class="card">
+      <img src="refrigerante.jpg" alt="Refrigerante Lata">
+      <div class="card-content">
+        <h3>Refrigerante Lata</h3>
+        <p>Coca, Guaraná, Pepsi...</p>
+        <span class="price">R$ 6,00</span>
+        <div class="actions">
+          <button class="btn-sm btn-primary add" data-name="Refrigerante Lata" data-price="6.00">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="suconatural.jpg" alt="Suco Natural">
+      <div class="card-content">
+        <h3>Suco Natural</h3>
+        <p>Laranja, limão, maracujá...</p>
+        <span class="price">R$ 8,00</span>
+        <div class="actions">
+          <button class="btn-sm btn-primary add" data-name="Suco Natural" data-price="8.00">Adicionar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <img src="agua.jpg" alt="Água Mineral">
+      <div class="card-content">
+        <h3>Água Mineral</h3>
+        <p>Com ou sem gás.</p>
+        <span class="price">R$ 4,00</span>
+        <div class="actions">
+          <button class="btn-sm btn-primary add" data-name="Água Mineral" data-price="4.00">Adicionar</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Drawer / Carrinho -->
+  <aside class="drawer" id="cartDrawer" aria-hidden="true">
+    <div class="drawer-header">
+      <strong>🧾 Seu Pedido</strong>
+      <button class="btn-sm" id="closeCart">Fechar</button>
+    </div>
+    <div class="drawer-body" id="cartBody">
+      <div class="empty">Seu carrinho está vazio.</div>
+    </div>
+    <div class="drawer-footer">
+      <div class="total-line"><span>Total</span><span id="cartTotal">R$ 0,00</span></div>
+      <div class="payments" id="payments">
+        <label><input type="radio" name="pay" value="Débito" checked/> Débito</label>
+        <label><input type="radio" name="pay" value="Crédito"/> Crédito</label>
+        <label><input type="radio" name="pay" value="PIX"/> PIX</label>
+        <label><input type="radio" name="pay" value="VR"/> VR</label>
+      </div>
+      <button class="send" id="sendWhats">Enviar pedido no WhatsApp</button>
+    </div>
+  </aside>
+
+<script>
+  // >>> CONFIGURE SEU WHATSAPP AQUI <<<
+  const WHATSAPP_NUMBER = '5511932383074'; // coloque seu número no formato 55DDDNÚMERO
+
+  // Estado do carrinho
+  const cart = [];
+
+  const fmt = (n)=> n.toLocaleString('pt-BR',{style:'currency', currency:'BRL'});
+
+  // abrir/fechar carrinho
+  const drawer = document.getElementById('cartDrawer');
+  document.getElementById('openCart').onclick = ()=> drawer.classList.add('open');
+  document.getElementById('closeCart').onclick = ()=> drawer.classList.remove('open');
+
+  // Botão Whats do topo
+  document.getElementById('whatsTop').onclick = ()=> {
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}`, '_blank');
+  };
+
+  // Add de itens simples
+  document.querySelectorAll('.add').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      addToCart({
+        name: btn.dataset.name,
+        price: parseFloat(btn.dataset.price),
+        qty: 1,
+        options: null,
+        note: ''
+      });
+    });
+  });
+
+  // Add batata com tamanho
+  document.querySelectorAll('.add-side').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const select = btn.closest('.card-content').querySelector('select');
+      const selOpt = select.selectedOptions[0];
+      const size = selOpt.value;
+      const price = parseFloat(selOpt.dataset.price);
+      addToCart({
+        name: `${btn.dataset.name} (${size})`,
+        price,
+        qty: 1,
+        options: {tamanho: size},
+        note: ''
+      });
+    });
+  });
+
+  function addToCart(item){
+    // Tenta agrupar itens iguais (mesmo nome e mesmo preço)
+    const idx = cart.findIndex(i => i.name===item.name && i.price===item.price && JSON.stringify(i.options)===JSON.stringify(item.options));
+    if(idx>=0) cart[idx].qty += item.qty;
+    else cart.push(item);
+    renderCart();
+    drawer.classList.add('open');
+  }
+
+  function removeFromCart(index){
+    cart.splice(index,1);
+    renderCart();
+  }
+
+  function changeQty(index, delta){
+    cart[index].qty = Math.max(1, cart[index].qty + delta);
+    renderCart();
+  }
+
+  function renderCart(){
+    const body = document.getElementById('cartBody');
+    body.innerHTML = '';
+    if(cart.length===0){
+      body.innerHTML = '<div class="empty">Seu carrinho está vazio.</div>';
+    }else{
+      cart.forEach((item, i)=>{
+        const div = document.createElement('div');
+        div.className = 'cart-item';
+        div.innerHTML = `
+          <div class="cart-top">
+            <div>
+              <div><strong>${item.name}</strong></div>
+              ${item.options ? `<div class="opt">Opções: ${Object.entries(item.options).map(([k,v])=>`${k}: ${v}`).join(', ')}</div>` : ``}
+              <div class="opt">Preço unit.: ${fmt(item.price)}</div>
+            </div>
+            <div class="qty">
+              <button aria-label="diminuir" onclick="changeQty(${i},-1)">−</button>
+              <div>${item.qty}</div>
+              <button aria-label="aumentar" onclick="changeQty(${i},1)">+</button>
+              <button aria-label="remover" style="background:#3a0d0d" onclick="removeFromCart(${i})">✕</button>
+            </div>
+          </div>
+          <div class="note">
+            <label>Observação do item:</label>
+            <textarea placeholder="ex.: sem cebola, ponto da carne..." oninput="updateNote(${i}, this.value)">${item.note||''}</textarea>
+          </div>
+        `;
+        body.appendChild(div);
+      });
+    }
+    // total
+    const total = cart.reduce((s,i)=> s + i.price * i.qty, 0);
+    document.getElementById('cartTotal').textContent = fmt(total);
+  }
+
+  window.updateNote = (i, val)=> {
+    cart[i].note = val;
+  }
+
+  window.removeFromCart = removeFromCart;
+  window.changeQty = changeQty;
+
+  // Enviar pedido para WhatsApp
+  document.getElementById('sendWhats').onclick = ()=>{
+    if(cart.length===0){
+      alert('Seu carrinho está vazio.');
+      return;
+    }
+    const pay = document.querySelector('input[name="pay"]:checked')?.value || 'Não informado';
+
+    const linhas = cart.map(i=>{
+      const opt = i.options ? ` | ${Object.entries(i.options).map(([k,v])=>`${k}: ${v}`).join(', ')}` : '';
+      const nota = i.note ? `\n   Obs.: ${i.note}` : '';
+      return `• ${i.qty}x ${i.name}${opt} — ${fmt(i.price)}${nota}`;
+    }).join('\n');
+
+    const total = cart.reduce((s,i)=> s + i.price * i.qty, 0);
+
+    const msg = `*Novo Pedido*%0A%0A${linhas}%0A%0A*Pagamento:* ${pay}%0A*Total:* ${fmt(total)}`;
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`;
+    window.open(url, '_blank');
+  };
+</script>
+
+<!-- RODAPÉ -->
+<footer style="background-color: #111; color: #fff; text-align: center; padding: 20px 0; font-family: Arial, sans-serif; margin-top: 40px;">
+    <p style="margin: 0; font-size: 14px;">
+        &copy; 2025 Lanches & Cia. Desenvolvido por <span style="color: #4ade80; font-weight: bold;">Carlos Eduardo Viana Vidal Costa</span>
+    </p>
+</footer>
+
+</body>
+</html>

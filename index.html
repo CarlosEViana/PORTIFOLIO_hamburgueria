@@ -578,59 +578,66 @@
   </aside>
 
 <script>
-  // >>> CONFIGURE SEU WHATSAPP AQUI <<<
-  const WHATSAPP_NUMBER = '5511932383074'; // coloque seu número no formato 55DDDNÚMERO
+  // CONFIG
+  const WHATSAPP_NUMBER = '5511932383074';
 
-  // Estado do carrinho
+  // Estado
   const cart = [];
-
   const fmt = (n)=> n.toLocaleString('pt-BR',{style:'currency', currency:'BRL'});
 
-  // abrir/fechar carrinho
+  // Drawer
   const drawer = document.getElementById('cartDrawer');
-  document.getElementById('openCart').onclick = ()=> drawer.classList.add('open');
-  document.getElementById('closeCart').onclick = ()=> drawer.classList.remove('open');
+  document.getElementById('openCart')?.addEventListener('click', ()=> drawer.classList.add('open'));
+  document.getElementById('closeCart')?.addEventListener('click', ()=> drawer.classList.remove('open'));
 
-  // Botão Whats do topo
-  document.getElementById('whatsTop').onclick = ()=> {
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}`, '_blank');
-  };
-
-  // Add de itens simples
-  document.querySelectorAll('.add').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
+  // --- CAPTURA DE CLIQUES (event delegation) ---
+  document.addEventListener('click', (e)=>{
+    
+    // Botões "Adicionar" simples
+    const addBtn = e.target.closest('.add');
+    if (addBtn) {
+      const { name, price } = addBtn.dataset;
       addToCart({
-        name: btn.dataset.name,
-        price: parseFloat(btn.dataset.price),
+        name,
+        price: parseFloat(price),
         qty: 1,
         options: null,
         note: ''
       });
-    });
-  });
+      return;
+    }
 
-  // Add batata com tamanho
-  document.querySelectorAll('.add-side').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const select = btn.closest('.card-content').querySelector('select');
-      const selOpt = select.selectedOptions[0];
+    // Botão "Adicionar" dos acompanhamentos com tamanho
+    const addSideBtn = e.target.closest('.add-side');
+    if (addSideBtn) {
+      const card = addSideBtn.closest('.card-content');
+      const select = card?.querySelector('select');
+      const selOpt = select?.selectedOptions?.[0];
+      if (!selOpt) return; // safety
       const size = selOpt.value;
       const price = parseFloat(selOpt.dataset.price);
       addToCart({
-        name: `${btn.dataset.name} (${size})`,
+        name: `${addSideBtn.dataset.name} (${size})`,
         price,
         qty: 1,
-        options: {tamanho: size},
+        options: { tamanho: size },
         note: ''
       });
-    });
+      return;
+    }
   });
 
+  // --- Carrinho ---
   function addToCart(item){
-    // Tenta agrupar itens iguais (mesmo nome e mesmo preço)
-    const idx = cart.findIndex(i => i.name===item.name && i.price===item.price && JSON.stringify(i.options)===JSON.stringify(item.options));
-    if(idx>=0) cart[idx].qty += item.qty;
+    // agrupa itens iguais (mesmo nome, preço e opções)
+    const idx = cart.findIndex(i =>
+      i.name === item.name &&
+      i.price === item.price &&
+      JSON.stringify(i.options) === JSON.stringify(item.options)
+    );
+    if (idx >= 0) cart[idx].qty += item.qty;
     else cart.push(item);
+
     renderCart();
     drawer.classList.add('open');
   }
@@ -648,9 +655,10 @@
   function renderCart(){
     const body = document.getElementById('cartBody');
     body.innerHTML = '';
-    if(cart.length===0){
+
+    if (cart.length === 0){
       body.innerHTML = '<div class="empty">Seu carrinho está vazio.</div>';
-    }else{
+    } else {
       cart.forEach((item, i)=>{
         const div = document.createElement('div');
         div.className = 'cart-item';
@@ -676,24 +684,20 @@
         body.appendChild(div);
       });
     }
+
     // total
     const total = cart.reduce((s,i)=> s + i.price * i.qty, 0);
     document.getElementById('cartTotal').textContent = fmt(total);
   }
 
-  window.updateNote = (i, val)=> {
-    cart[i].note = val;
-  }
-
+  // funçõezinhas expostas pro HTML inline
+  window.updateNote = (i, val)=> { cart[i].note = val; };
   window.removeFromCart = removeFromCart;
   window.changeQty = changeQty;
 
-  // Enviar pedido para WhatsApp
-  document.getElementById('sendWhats').onclick = ()=>{
-    if(cart.length===0){
-      alert('Seu carrinho está vazio.');
-      return;
-    }
+  // Enviar WhatsApp
+  document.getElementById('sendWhats')?.addEventListener('click', ()=>{
+    if (cart.length === 0) { alert('Seu carrinho está vazio.'); return; }
     const pay = document.querySelector('input[name="pay"]:checked')?.value || 'Não informado';
 
     const linhas = cart.map(i=>{
@@ -703,12 +707,12 @@
     }).join('\n');
 
     const total = cart.reduce((s,i)=> s + i.price * i.qty, 0);
-
     const msg = `*Novo Pedido*%0A%0A${linhas}%0A%0A*Pagamento:* ${pay}%0A*Total:* ${fmt(total)}`;
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`;
     window.open(url, '_blank');
-  };
+  });
 </script>
+
 
 <!-- RODAPÉ -->
 <footer style="background-color: #111; color: #fff; text-align: center; padding: 20px 0; font-family: Arial, sans-serif; margin-top: 40px;">
